@@ -32,10 +32,10 @@ canvas.height = window.innerHeight;
 
 /* 🟦 Player */
 let player = {
-    x: 100,
-    y: 100,
+    x: 150,
+    y: 50,
     size: 30,
-    speed: 5
+    speed: 7
 };
 
 /* 🟨 Golden Rectangle (Goal) */
@@ -92,7 +92,7 @@ function update(){
     ctx.clearRect(0,0,canvas.width,canvas.height);
 
     // Draw player
-    ctx.fillStyle = "blue";
+    ctx.fillStyle = "lightgreen";
     ctx.fillRect(player.x, player.y, player.size, player.size);
 
     // Draw goal
