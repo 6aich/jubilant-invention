@@ -10,20 +10,22 @@ body{
     overflow:hidden;
 }
 
-/* 🌴 Island Background */
 canvas{
     display:block;
     background-image:url("https://images.unsplash.com/photo-1507525428034-b723cf961d3e");
     background-size:cover;
 }
-
-
 </style>
 </head>
 
 <body>
 
 <canvas id="game"></canvas>
+
+<!-- 🎵 MUSIC -->
+<audio id="music" loop>
+<source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
+</audio>
 
 <script>
 const canvas = document.getElementById("game");
@@ -32,22 +34,30 @@ const ctx = canvas.getContext("2d");
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
+/* 🖼️ PLAYER IMAGE */
+let playerImg = new Image();
+playerImg.src = "IMG_1793-2.PNG";
+
+/* 🎁 CHEST IMAGE */
+let chestImg = new Image();
+chestImg.src = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/..."; // KEEP YOUR FULL STRING
+
 /* 🟦 Player */
 let player = {
     x: 150,
-    y: 50,
-    size: 30,
-    speed: 7
-   
+    y: 100,
+    size: 80,
+    speed: 6
 };
 
-/* 🟨 Golden Rectangle (Goal) */
+/* 🎁 Goal */
 let goal = {
-    x: canvas.width - 200,
+    x: canvas.width - 250,
     y: canvas.height / 2,
-    width: 80,
-    height: 80,
-    opened: false
+    width: 140,
+    height: 100,
+    opened: false,
+    split: 0
 };
 
 /* 🎮 Controls */
@@ -56,7 +66,6 @@ let keys = {};
 document.addEventListener("keydown", e => {
     keys[e.key.toLowerCase()] = true;
 
-    // Press E to open
     if(e.key.toLowerCase() === "e"){
         if(
             player.x < goal.x + goal.width &&
@@ -65,6 +74,7 @@ document.addEventListener("keydown", e => {
             player.y + player.size > goal.y
         ){
             goal.opened = true;
+            document.getElementById("music").play();
         }
     }
 });
@@ -73,13 +83,42 @@ document.addEventListener("keyup", e => {
     keys[e.key.toLowerCase()] = false;
 });
 
-/* 💖 Draw Hearts */
-function drawHearts(){
-    ctx.font = "40px Arial";
-    ctx.fillText("💖 💕 💞 💓 💗 💘", goal.x - 50, goal.y + 120);
+/* 💖 Hearts particles */
+let hearts = [];
 
-    ctx.font = "50px Arial";
-    ctx.fillText("Happy Anniversary Mum & Dad 💖", canvas.width/2 - 300, 100);
+function createHearts(){
+    for(let i=0;i<30;i++){
+        hearts.push({
+            x: goal.x + goal.width/2,
+            y: goal.y,
+            vx: (Math.random()-0.5)*6,
+            vy: Math.random()*-6,
+            size: 30
+        });
+    }
+}
+
+function drawHearts(){
+    ctx.font = "30px Arial";
+    hearts.forEach(h=>{
+        h.x += h.vx;
+        h.y += h.vy;
+        h.vy += 0.2;
+
+        ctx.fillText("💖", h.x, h.y);
+    });
+}
+
+/* ✨ Sparkles */
+function drawSparkles(){
+    for(let i=0;i<10;i++){
+        ctx.fillStyle="white";
+        ctx.fillRect(
+            goal.x + Math.random()*goal.width,
+            goal.y + Math.random()*goal.height,
+            3,3
+        );
+    }
 }
 
 /* 🎮 Game Loop */
@@ -91,31 +130,46 @@ function update(){
     if(keys["a"] || keys["arrowleft"]) player.x -= player.speed;
     if(keys["d"] || keys["arrowright"]) player.x += player.speed;
 
-    // Clear screen
+    player.x = Math.max(0, Math.min(canvas.width - player.size, player.x));
+    player.y = Math.max(0, Math.min(canvas.height - player.size, player.y));
+
     ctx.clearRect(0,0,canvas.width,canvas.height);
 
-    // Draw player
-    ctx.fillStyle = "lightgreen";
-    ctx.fillRect(player.x, player.y, player.size, player.size);
+    /* 🖼️ Player with glow */
+    ctx.shadowColor = "pink";
+    ctx.shadowBlur = 20;
+    ctx.drawImage(playerImg, player.x, player.y, player.size, player.size);
+    ctx.shadowBlur = 0;
 
-    // Draw goal
+    /* 🎁 Chest */
     if(!goal.opened){
-        ctx.fillStyle = "gold";
-        ctx.fillRect(goal.x, goal.y, goal.width, goal.height);
+        ctx.drawImage(chestImg, goal.x, goal.y, goal.width, goal.height);
+        drawSparkles();
     } else {
-        // Split animation (simple)
-        ctx.fillStyle = "gold";
-        ctx.fillRect(goal.x - 20, goal.y, goal.width/2, goal.height);
-        ctx.fillRect(goal.x + goal.width/2 + 20, goal.y, goal.width/2, goal.height);
+
+        // FIRST TIME → create hearts
+        if(goal.split === 0){
+            createHearts();
+        }
+
+        goal.split += 2;
+
+        // Smooth split animation
+        ctx.drawImage(chestImg, goal.x - goal.split, goal.y, goal.width/2, goal.height);
+        ctx.drawImage(chestImg, goal.x + goal.width/2 + goal.split, goal.y, goal.width/2, goal.height);
 
         drawHearts();
+
+        ctx.font = "60px Arial";
+        ctx.fillStyle = "white";
+        ctx.fillText("💖 Happy Anniversary Mum & Dad 💖", canvas.width/2 - 500, 100);
     }
 
-    // Instructions
+    /* 🎮 Instructions */
     ctx.fillStyle = "white";
     ctx.font = "20px Arial";
-    ctx.fillText("Move with WASD or Arrow Keys", 20, 30);
-    ctx.fillText("Go to the golden box and press E 💖", 20, 60);
+    ctx.fillText("Move with WASD / Arrows", 20, 30);
+    ctx.fillText("Go to chest and press E 💖", 20, 60);
 
     requestAnimationFrame(update);
 }
